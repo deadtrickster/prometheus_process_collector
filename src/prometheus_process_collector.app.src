@@ -1,0 +1,16 @@
+{application, prometheus_process_collector,
+ [{description, "Prometheus.io process collector"},
+  {vsn, "0.1.0"},
+  {registered, []},
+  {applications,
+   [kernel,
+    stdlib
+   ]},
+  {env,[]},
+  {modules, []},
+
+  {maintainers, ["Ilya Khaprov"]},
+  {licenses, ["MIT"]},
+  {links, [{"Github", "https://github.com/deadtrickster/prometheus_process_collector.erl"},
+           {"Prometheus.io Client", "https://github.com/deadtrickster/prometheus.erl"}]}
+ ]}.
