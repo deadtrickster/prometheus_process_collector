@@ -106,7 +106,7 @@ collect_metrics(process_cpu_seconds_total, Stat) ->
 current_timestamp() ->
   {Mega, Sec, _} = os:timestamp(),
   Mega*1000000 + Sec.
-    
+
 start_time() ->
   Stat = read_stat(),
   round(list_to_integer(lists:nth(22, Stat)) / sc_clk_tck()) + get_btime().
@@ -119,7 +119,7 @@ get_btime () ->
 open_fds_count() ->
   files_count("/proc/self/fd").
 
-max_fds_count() ->  
+max_fds_count() ->
   Content = read_proc_file("/proc/self/limits"),
   R = re:run(Content, "Max open files[\\s]+[\\d]+"),
   {match, [{Start, Length}]} = R,
