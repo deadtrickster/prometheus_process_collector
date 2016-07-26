@@ -1,7 +1,11 @@
 Prometheus.io Process Collector [![Hex.pm](https://img.shields.io/hexpm/v//prometheus_process_collector.svg?maxAge=2592000)](https://hex.pm/packages/prometheus_process_collector) [![Build Status](https://travis-ci.org/deadtrickster/prometheus_process_collector.svg?branch=master)](https://travis-ci.org/deadtrickster/prometheus_process_collector.erl)
 =====
 
-**Linux-only**
+Collector which exports the current state of process metrics including cpu, memory, file descriptor usage and native threads count as well as the process start and up times.
+
+Uses /proc, **Linux-only**.
+
+Example scrape:
 
 ```
 # TYPE process_open_fds gauge
@@ -43,3 +47,8 @@ Build
 -----
 
     $ rebar3 compile
+
+License
+-----
+
+MIT
