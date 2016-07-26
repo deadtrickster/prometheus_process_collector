@@ -1,6 +1,8 @@
 Prometheus.io Process Collector [![Hex.pm](https://img.shields.io/hexpm/v//prometheus_process_collector.svg?maxAge=2592000)](https://hex.pm/packages/prometheus_process_collector) [![Build Status](https://travis-ci.org/deadtrickster/prometheus_process_collector.erl.svg?branch=master)](https://travis-ci.org/deadtrickster/prometheus_process_collector.erl)
 =====
 
+**Linux-only**
+
 ```
 # TYPE process_open_fds gauge
 # HELP process_open_fds Number of open file descriptors.
@@ -28,6 +30,14 @@ process_resident_memory_bytes 57053184
 process_cpu_seconds_total{kind="utime"} 2.46
 process_cpu_seconds_total{kind="stime"} 5.44
 ```
+
+Usage
+-----
+
+You can register this collector manually using `prometheus_process_collector/0,1` or use `default_collectors` env entry for `prometheus`.
+
+With [Prometheus Plugs](https://github.com/deadtrickster/prometheus-plugs) - just add prometheus_process_collector dependency to top-level project (i.e. [like here](https://github.com/deadtrickster/prometheus-plugs-example/edit/master/mix.exs)).
+
 
 Build
 -----
