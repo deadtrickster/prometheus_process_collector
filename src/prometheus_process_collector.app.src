@@ -1,6 +1,6 @@
 {application, prometheus_process_collector,
  [{description, "Prometheus.io process collector"},
-  {vsn, "0.1.0"},
+  {vsn, "0.1.1"},
   {registered, []},
   {applications,
    [kernel,

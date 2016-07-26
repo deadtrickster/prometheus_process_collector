@@ -83,7 +83,7 @@ files_count(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
     return mk_error(env, "opendir_fail");
   }
   while ((entry = readdir(dirp)) != NULL) {
-    if (entry->d_type == DT_REG) {
+    if (entry->d_type == DT_LNK) {
       file_count++;
     }
   }
