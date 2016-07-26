@@ -1,4 +1,4 @@
-Prometheus.io Process Collector [![Hex.pm](https://img.shields.io/hexpm/v//prometheus_process_collector.svg?maxAge=2592000)](https://hex.pm/packages/prometheus_process_collector) [![Build Status](https://travis-ci.org/deadtrickster/prometheus_process_collector.erl.svg?branch=master)](https://travis-ci.org/deadtrickster/prometheus_process_collector.erl)
+Prometheus.io Process Collector [![Hex.pm](https://img.shields.io/hexpm/v//prometheus_process_collector.svg?maxAge=2592000)](https://hex.pm/packages/prometheus_process_collector) [![Build Status](https://travis-ci.org/deadtrickster/prometheus_process_collector.svg?branch=master)](https://travis-ci.org/deadtrickster/prometheus_process_collector.erl)
 =====
 
 **Linux-only**
