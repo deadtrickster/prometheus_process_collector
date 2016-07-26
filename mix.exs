@@ -12,6 +12,8 @@ defmodule PrometheusProcessCollector.Mixfile do
   defp description do
     """
     Prometheus.io process collector.
+    Collector exports the current state of process metrics including cpu, memory,
+    file descriptor usage and native threads count as well as the process start and up times.
     """
   end
 
@@ -20,10 +22,11 @@ defmodule PrometheusProcessCollector.Mixfile do
      maintainers: ["Ilya Khaprov"],
      licenses: ["MIT"],
      links: %{"GitHub" => "https://github.com/deadtrickster/prometheus_process_collector.erl",
-              "Prometheus.io Client" => "https://github.com/deadtrickster/prometheus.erl"},
+              "Prometheus.io Client" => "https://github.com/deadtrickster/prometheus.erl",
+              "Elixir Plugs" => "https://hex.pm/packages/prometheus_plugs"},
      files: ["c_src", "src", "include", "priv", "README.md", "LICENSE", "rebar.config"]]
   end
-  
+
   defp deps do
     [{:prometheus, "~> 1.6"}
     ]

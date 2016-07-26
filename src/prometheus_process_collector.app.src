@@ -1,5 +1,7 @@
 {application, prometheus_process_collector,
- [{description, "Prometheus.io process collector"},
+ [{description, "Prometheus.io process collector
+    Collector exports the current state of process metrics including cpu, memory,
+    file descriptor usage and native threads count as well as the process start and up times."},
   {vsn, "0.1.2"},
   {registered, []},
   {applications,
@@ -12,5 +14,6 @@
   {maintainers, ["Ilya Khaprov"]},
   {licenses, ["MIT"]},
   {links, [{"Github", "https://github.com/deadtrickster/prometheus_process_collector.erl"},
-           {"Prometheus.io Client", "https://github.com/deadtrickster/prometheus.erl"}]}
+           {"Prometheus.io Client", "https://github.com/deadtrickster/prometheus.erl"},
+           {"Elixir Plugs", "https://hex.pm/packages/prometheus_plugs"}]}
  ]}.
