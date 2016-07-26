@@ -2,6 +2,7 @@
 _*
 .eunit
 *.o
+*.so
 *.beam
 *.plt
 *.swp
