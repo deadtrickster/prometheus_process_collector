@@ -1,0 +1,7 @@
+sudo: false
+language: erlang
+install: 'true'
+otp_release:
+- 19.0
+- 18.0
+script: "./elvis rock && ./rebar3 eunit"
