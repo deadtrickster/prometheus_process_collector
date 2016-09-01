@@ -44,7 +44,7 @@ With [Prometheus Plugs](https://github.com/deadtrickster/prometheus-plugs) - jus
 
 ## Integrations / Collectors / Instrumenters
  - [Ecto collector](https://github.com/deadtrickster/prometheus-ecto)
- - [Elixir plugs](https://github.com/deadtrickster/prometheus-plugs)
+ - [Plugs Instrumenter/Exporter](https://github.com/deadtrickster/prometheus-plugs)
  - [Elli middleware](https://github.com/elli-lib/elli_prometheus)
  - [Fuse plugin](https://github.com/jlouis/fuse#fuse_stats_prometheus)
  - [Phoenix instrumenter](https://github.com/deadtrickster/prometheus-phoenix)
