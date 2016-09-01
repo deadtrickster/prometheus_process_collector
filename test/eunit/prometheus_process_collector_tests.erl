@@ -9,7 +9,7 @@ prometheus_format_test_() ->
    [fun test_process_collector/1]}.
 
 test_process_collector(_) ->
-  prometheus_collector:register(prometheus_process_collector),
+  prometheus_registry:register_collector(prometheus_process_collector),
   Metrics = prometheus_text_format:format(),
   [
    ?_assertMatch({match, _}, re:run(Metrics, "process_open_fds [1-9]")),

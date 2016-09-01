@@ -28,7 +28,7 @@
 
 deregister_cleanup(_) -> ok.
 
-collect_mf(Callback, _Registry) ->
+collect_mf(_Registry, Callback) ->
 
   Stat = read_stat(),
 
@@ -66,7 +66,9 @@ collect_mf(Callback, _Registry) ->
 
   Callback(create_counter(process_cpu_seconds_total,
                           "Process CPU seconds total.",
-                          Stat)).
+                          Stat)),
+
+  ok.
 
 collect_metrics(process_open_fds, _) ->
   gauge_metric(open_fds_count());
