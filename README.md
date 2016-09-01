@@ -42,6 +42,16 @@ You can register this collector manually using `prometheus_process_collector/0,1
 
 With [Prometheus Plugs](https://github.com/deadtrickster/prometheus-plugs) - just add prometheus_process_collector dependency to top-level project (i.e. [like here](https://github.com/deadtrickster/prometheus-plugs-example/edit/master/mix.exs)).
 
+## Integrations / Collectors / Instrumenters
+ - [Ecto collector](https://github.com/deadtrickster/prometheus-ecto)
+ - [Elixir plugs](https://github.com/deadtrickster/prometheus-plugs)
+ - [Elli middleware](https://github.com/elli-lib/elli_prometheus)
+ - [Fuse plugin](https://github.com/jlouis/fuse#fuse_stats_prometheus)
+ - [Phoenix instrumenter](https://github.com/deadtrickster/prometheus-phoenix)
+ - [Process Info Collector](https://github.com/deadtrickster/prometheus_process_collector.erl)
+ - [Prometheus.erl](https://github.com/deadtrickster/prometheus.erl)
+ - [Prometheus.ex](https://github.com/deadtrickster/prometheus.ex)
+ - [RabbitMQ Exporter](https://github.com/deadtrickster/prometheus_rabbitmq_exporter)
 
 Build
 -----
