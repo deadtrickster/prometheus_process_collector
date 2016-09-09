@@ -3,7 +3,7 @@ defmodule PrometheusProcessCollector.Mixfile do
 
   def project do
     [app: :prometheus_process_collector,
-     version: "1.0.0-alpha6",
+     version: "1.0.0-alpha8",
      description: description,
      package: package,
      deps: deps]
@@ -28,7 +28,7 @@ defmodule PrometheusProcessCollector.Mixfile do
   end
 
   defp deps do
-    [{:prometheus, "~> 3.0.0-alpha6"}
+    [{:prometheus, "~> 3.0.0-alpha8"}
     ]
   end
 end
