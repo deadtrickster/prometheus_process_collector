@@ -3,7 +3,7 @@ defmodule PrometheusProcessCollector.Mixfile do
 
   def project do
     [app: :prometheus_process_collector,
-     version: "1.0.0-alpha9",
+     version: "1.0.0",
      description: description,
      package: package,
      deps: deps]
@@ -24,11 +24,11 @@ defmodule PrometheusProcessCollector.Mixfile do
      links: %{"GitHub" => "https://github.com/deadtrickster/prometheus_process_collector.erl",
               "Prometheus.io Client" => "https://github.com/deadtrickster/prometheus.erl",
               "Elixir Plugs" => "https://hex.pm/packages/prometheus_plugs"},
-     files: ["c_src", "src", "include", "priv", "README.md", "LICENSE", "rebar.config"]]
+     files: ["c_src", "src", "priv", "README.md", "LICENSE", "rebar.config"]]
   end
 
   defp deps do
-    [{:prometheus, "~> 3.0.0-alpha8"}
+    [{:prometheus, "~> 3.0.0"}
     ]
   end
 end
