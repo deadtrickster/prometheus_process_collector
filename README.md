@@ -5,7 +5,20 @@ Collector which exports the current state of process metrics including cpu, memo
 
 Uses /proc, **Linux-only**.
 
-Example scrape:
+## Installation
+
+When erlang is running in embedded mode this collector should be picked up automatically. For interactive
+mode (i.e. iex, mix, etc) it must be registered manually:
+
+```erlang
+prometheus_registry:registry_collector(prometheus_process_collector)
+```
+
+```elixir
+Prometheus.Registry.register_collector(:prometheus_process_collector)
+```
+
+## Example scrape:
 
 ```
 # TYPE process_open_fds gauge
