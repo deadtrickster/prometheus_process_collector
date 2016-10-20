@@ -9,7 +9,7 @@ Uses /proc, **Linux-only**.
 
 ## Installation
 
-**Hex package note**: Because OTP strictly validates NIF version c_src was compiled with, Iremoved precompiled binaries from Hex package. This means that OTP source code is needed to build this library.
+**Hex package note**: Because OTP strictly validates NIF version c_src was compiled with, I removed precompiled binaries from the Hex package. This means that OTP source code is needed to build this library.
 
 When erlang is running in embedded mode this collector should be picked up automatically. For interactive
 mode (i.e. iex, mix, etc) it must be registered manually:
