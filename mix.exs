@@ -3,10 +3,10 @@ defmodule PrometheusProcessCollector.Mixfile do
 
   def project do
     [app: :prometheus_process_collector,
-     version: "1.0.2",
-     description: description,
-     package: package,
-     deps: deps]
+     version: "1.0.3",
+     description: description(),
+     package: package(),
+     deps: deps()]
   end
 
   defp description do
@@ -23,12 +23,16 @@ defmodule PrometheusProcessCollector.Mixfile do
      licenses: ["MIT"],
      links: %{"GitHub" => "https://github.com/deadtrickster/prometheus_process_collector.erl",
               "Prometheus.io Client" => "https://github.com/deadtrickster/prometheus.erl",
-              "Elixir Plugs" => "https://hex.pm/packages/prometheus_plugs"},
-     files: ["c_src", "src", "priv", "README.md", "LICENSE", "rebar.config"]]
+              "Inets HTTPD Exporter" => "https://hex.pm/packages/prometheus_httpd",
+              "Prometheus.ex" => "https://hex.pm/packages/prometheus_ex",
+              "Ecto Instrumenter" => "https://hex.pm/packages/prometheus_ecto",
+              "Phoenix Instrumenter" => "https://hex.pm/packages/prometheus_phoenix",
+              "Plugs Instrumenter/Exporter" => "https://hex.pm/packages/prometheus_plugs"},
+     files: ["c_src", "src", "README.md", "LICENSE", "rebar.config"]]
   end
 
   defp deps do
-    [{:prometheus, "~> 3.1"}
+    [{:prometheus, "~> 3.2"}
     ]
   end
 end
