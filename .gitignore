@@ -15,3 +15,5 @@ erl_crash.dump
 logs
 _build
 deps
+__checkouts
+_checkouts
