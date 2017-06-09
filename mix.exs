@@ -32,7 +32,7 @@ defmodule PrometheusProcessCollector.Mixfile do
   end
 
   defp deps do
-    [{:prometheus, "~> 3.2"}
+    [{:prometheus, "~> 3.3"}
     ]
   end
 end

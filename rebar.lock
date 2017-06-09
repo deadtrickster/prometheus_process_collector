@@ -1,6 +1,6 @@
 {"1.1.0",
-[{<<"prometheus">>,{pkg,<<"prometheus">>,<<"3.2.2">>},0}]}.
+[{<<"prometheus">>,{pkg,<<"prometheus">>,<<"3.3.1">>},0}]}.
 [
 {pkg_hash,[
- {<<"prometheus">>, <<"887A687855E171852BE3E023AEA9DBC1EA3CE0F327B95765896EBB2847FEF7F9">>}]}
+ {<<"prometheus">>, <<"BC680E9D7AA53CBC1B554093968718D25BA264CD936840B24278E1CB77B97225">>}]}
 ].
