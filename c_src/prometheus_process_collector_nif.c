@@ -98,3 +98,66 @@ static ErlNifFunc nif_funcs[] = {
 };
 
 ERL_NIF_INIT(prometheus_process_collector, nif_funcs, NULL, NULL, NULL, NULL);
+
+
+/* FreeBSD
+get process by pid:
+      
+   pid_t pid = ...;
+   struct kinfo_proc *proc = kinfo_getproc(pid);
+   if (proc) {
+     free(proc);
+   }
+
+
+process_open_fds:
+
+   int cnt;
+   files = kinfo_getfile(kp->ki_pid, &cnt);
+   if(files) {
+     free(files)
+   }
+
+   or https://github.com/freebsd/freebsd/blob/9e0a154b0fd5fa9010238ac9497ec59f84167c92/lib/libutil/kinfo_getfile.c#L24-L40
+
+
+process_start_time_seconds:
+   kproc->ki_start.tv_sec
+
+
+process_uptime_seconds:
+   start_time_seconds - now [what about time adjustments?]
+
+
+process_threads_total:
+   kproc->ki_numthreads
+
+
+process_virtual_memory_bytes:   
+      proc->m_size = kproc->ki_size;
+
+process_resident_memory_bytes:
+      static int pageSizeKb;
+      len = sizeof(pageSize);
+      if (sysctlbyname("vm.stats.vm.v_page_size", &pageSize, &len, NULL, 0) == -1) {
+         pageSize = PAGE_SIZE;
+         pageSizeKb = PAGE_SIZE_KB;
+      } else {
+         pageSizeKb = pageSize / ONE_K;
+      }
+      proc->m_resident = kproc->ki_rssize * pageSizeKb;
+
+
+process_cpu_seconds_total:
+https://github.com/freebsd/freebsd/blob/4281746ee51f1fe12c328d19e730e80f1512858e/sys/sys/user.h#L202
+
+process_fd_limit:
+https://github.com/freebsd/freebsd/blob/master/usr.bin/limits/limits.c
+
+process_threads_limit:
+
+
+
+ */
+
+
