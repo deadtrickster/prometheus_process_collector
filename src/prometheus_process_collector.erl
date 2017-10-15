@@ -87,13 +87,13 @@ metric(counter, Labels, Value) ->
 metric(gauge, Labels, Value) ->
   gauge_metric(Labels, Value);
 metric(summary, Labels, Value0) ->
-  summary_metric(Labels,Value0);
+  summary_metric(Labels, Value0);
 metric(histogram, Labels, Value0) ->
-  histogram_metric(Labels,Value0);
+  histogram_metric(Labels, Value0);
 metric(untyped, Labels, Value) ->
   untyped_metric(Labels, Value);
 metric(boolean, Labels, Value0) ->
-  boolean_metric(Labels,Value0).
+  boolean_metric(Labels, Value0).
 
 get_process_info() ->
   not_loaded(?LINE).
