@@ -3,161 +3,86 @@
 #include <dirent.h>
 #include <unistd.h>
 
-ERL_NIF_TERM mk_error(ErlNifEnv* env, const char* mesg);
-ERL_NIF_TERM mk_atom(ErlNifEnv* env, const char* atom);
+#include "prometheus_process_collector.h"
 
 #define MAXBUFLEN 1024
 
-ERL_NIF_TERM
-mk_atom(ErlNifEnv* env, const char* atom)
+static ERL_NIF_TERM ATOM_OK;
+static ERL_NIF_TERM ATOM_ERROR;
+static ERL_NIF_TERM ATOM_PROCESS_OPEN_FDS;
+static ERL_NIF_TERM ATOM_PROCESS_MAX_FDS;
+static ERL_NIF_TERM ATOM_PROCESS_START_TIME_SECONDS;
+static ERL_NIF_TERM ATOM_PROCESS_UPTIME_SECONDS;
+static ERL_NIF_TERM ATOM_PROCESS_THREADS_TOTAL;
+static ERL_NIF_TERM ATOM_PROCESS_VIRTUAL_MEMORY_BYTES;
+static ERL_NIF_TERM ATOM_PROCESS_RESIDENT_MEMORY_BYTES;
+static ERL_NIF_TERM ATOM_PROCESS_UTIME_SECONDS;
+static ERL_NIF_TERM ATOM_PROCESS_STIME_SECONDS;
+
+static ERL_NIF_TERM process_info_plist[PROCESS_INFO_COUNT];
+
+/* ERL_NIF_TERM */
+/* mk_error(ErlNifEnv* env, const char* mesg) */
+/* { */
+/*   return enif_make_tuple2(env, ATOM_ERROR, mk_atom(env, mesg)); */
+/* } */
+
+static ERL_NIF_TERM get_process_info(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
 {
-  ERL_NIF_TERM ret;
-
-  if(!enif_make_existing_atom(env, atom, &ret, ERL_NIF_LATIN1))
-    {
-      return enif_make_atom(env, atom);
-    }
-
-  return ret;
-}
-
-ERL_NIF_TERM
-mk_error(ErlNifEnv* env, const char* mesg)
-{
-  return enif_make_tuple2(env, mk_atom(env, "error"), mk_atom(env, mesg));
-}
-
-static ERL_NIF_TERM
-sc_clk_tck(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
-{
-  if(argc != 0)
-    {
+  pid_t pid;
+  if(argc == 1) {
+    if (!enif_get_int(env, argv[0], &pid))
       return enif_make_badarg(env);
-    }
-
-  long result = sysconf(_SC_CLK_TCK);
-
-  if(result == -1 || result == 0)
-    {
-      return mk_error(env, "sysconf_fail");
-    }
-
-  return enif_make_ulong(env, result);
-}
-
-static ERL_NIF_TERM
-sc_pagesize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
-{
-  if(argc != 0)
-    {
-      return enif_make_badarg(env);
-    }
-
-  long result = sysconf(_SC_PAGESIZE);
-
-  if(result == -1 || result == 0)
-    {
-      return mk_error(env, "sysconf_fail");
-    }
-
-  return enif_make_ulong(env, result);
-}
-
-static ERL_NIF_TERM
-files_count(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[])
-{
-  long file_count = 0;
-  DIR* dirp;
-  struct dirent* entry;
-  char path[MAXBUFLEN];
-
-  enif_get_string(env, argv[0], path, 1024, ERL_NIF_LATIN1);
-
-  if(argc != 1)
-    {
-      return enif_make_badarg(env);
-    }
-  
-  dirp = opendir(path);
-  if (dirp == NULL) {
-    return mk_error(env, "opendir_fail");
+  } else {
+    pid = getpid();
   }
-  while ((entry = readdir(dirp)) != NULL) {
-    if (entry->d_type == DT_LNK) {
-      file_count++;
-    }
+
+  struct prometheus_process_info* prometheus_process_info = (struct prometheus_process_info*)malloc(sizeof(prometheus_process_info));
+
+  if(fill_prometheus_process_info(pid, prometheus_process_info)) {
+    return ATOM_ERROR;
   }
-  closedir(dirp);
-  return enif_make_ulong(env, file_count);
+
+  process_info_plist[0] = enif_make_tuple2(env, ATOM_PROCESS_OPEN_FDS, enif_make_int(env, prometheus_process_info->pids_count));
+  process_info_plist[1] = enif_make_tuple2(env, ATOM_PROCESS_MAX_FDS, enif_make_int(env, prometheus_process_info->pids_limit));
+  process_info_plist[2] = enif_make_tuple2(env, ATOM_PROCESS_START_TIME_SECONDS, enif_make_long(env, prometheus_process_info->start_time_seconds));
+  process_info_plist[3] = enif_make_tuple2(env, ATOM_PROCESS_UPTIME_SECONDS, enif_make_long(env, prometheus_process_info->uptime_seconds));
+  process_info_plist[4] = enif_make_tuple2(env, ATOM_PROCESS_THREADS_TOTAL, enif_make_int(env, prometheus_process_info->threads_count));
+  process_info_plist[5] = enif_make_tuple2(env, ATOM_PROCESS_VIRTUAL_MEMORY_BYTES, enif_make_ulong(env, prometheus_process_info->vm_bytes));
+  process_info_plist[6] = enif_make_tuple2(env, ATOM_PROCESS_RESIDENT_MEMORY_BYTES, enif_make_ulong(env, prometheus_process_info->rm_bytes));
+  process_info_plist[7] = enif_make_tuple2(env, ATOM_PROCESS_UTIME_SECONDS, enif_make_long(env, prometheus_process_info->utime_seconds));
+  process_info_plist[8] = enif_make_tuple2(env, ATOM_PROCESS_STIME_SECONDS, enif_make_long(env, prometheus_process_info->stime_seconds));
+
+  return enif_make_list_from_array(env, process_info_plist, 9);
 }
 
-static ErlNifFunc nif_funcs[] = {
-  {"sc_clk_tck", 0, sc_clk_tck},
-  {"sc_pagesize", 0, sc_pagesize},
-  {"files_count", 1, files_count}
-};
 
-ERL_NIF_INIT(prometheus_process_collector, nif_funcs, NULL, NULL, NULL, NULL);
+static ErlNifFunc nif_funcs[] =
+  {
+   {"get_process_info", 0, get_process_info}/* , */
+   /* {"get_process_info", 1, get_process_info} */
+  };
 
+static int on_load(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
+{
 
-/* FreeBSD
-get process by pid:
-      
-   pid_t pid = ...;
-   struct kinfo_proc *proc = kinfo_getproc(pid);
-   if (proc) {
-     free(proc);
-   }
+#define ATOM(Id, Value) { Id = enif_make_atom(env, Value); }
+  // initialize the atoms
+  ATOM(ATOM_OK, "ok");
+  ATOM(ATOM_ERROR, "error");
+  ATOM(ATOM_PROCESS_OPEN_FDS, "process_open_fds");
+  ATOM(ATOM_PROCESS_MAX_FDS, "process_max_fds");
+  ATOM(ATOM_PROCESS_START_TIME_SECONDS, "process_start_time_seconds");
+  ATOM(ATOM_PROCESS_UPTIME_SECONDS, "process_uptime_seconds");
+  ATOM(ATOM_PROCESS_THREADS_TOTAL, "process_threads_total");
+  ATOM(ATOM_PROCESS_VIRTUAL_MEMORY_BYTES, "process_virtual_memory_bytes");
+  ATOM(ATOM_PROCESS_RESIDENT_MEMORY_BYTES, "process_resident_memory_bytes");
+  ATOM(ATOM_PROCESS_UTIME_SECONDS, "process_utime_seconds");
+  ATOM(ATOM_PROCESS_STIME_SECONDS, "process_stime_seconds");
+#undef ATOM
 
+  return 0;
 
-process_open_fds:
+}
 
-   int cnt;
-   files = kinfo_getfile(kp->ki_pid, &cnt);
-   if(files) {
-     free(files)
-   }
-
-   or https://github.com/freebsd/freebsd/blob/9e0a154b0fd5fa9010238ac9497ec59f84167c92/lib/libutil/kinfo_getfile.c#L24-L40
-
-
-process_start_time_seconds:
-   kproc->ki_start.tv_sec
-
-
-process_uptime_seconds:
-   start_time_seconds - now [what about time adjustments?]
-
-
-process_threads_total:
-   kproc->ki_numthreads
-
-
-process_virtual_memory_bytes:   
-      proc->m_size = kproc->ki_size;
-
-process_resident_memory_bytes:
-      static int pageSizeKb;
-      len = sizeof(pageSize);
-      if (sysctlbyname("vm.stats.vm.v_page_size", &pageSize, &len, NULL, 0) == -1) {
-         pageSize = PAGE_SIZE;
-         pageSizeKb = PAGE_SIZE_KB;
-      } else {
-         pageSizeKb = pageSize / ONE_K;
-      }
-      proc->m_resident = kproc->ki_rssize * pageSizeKb;
-
-
-process_cpu_seconds_total:
-https://github.com/freebsd/freebsd/blob/4281746ee51f1fe12c328d19e730e80f1512858e/sys/sys/user.h#L202
-
-process_fd_limit:
-https://github.com/freebsd/freebsd/blob/master/usr.bin/limits/limits.c
-
-process_threads_limit:
-
-
-
- */
-
-
+ERL_NIF_INIT(prometheus_process_collector, nif_funcs, &on_load, NULL, NULL, NULL);
