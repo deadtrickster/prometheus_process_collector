@@ -275,6 +275,7 @@ int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info* prom
   return 0;
 }
 
+#ifdef __STANDALONE_TEST__
 int main(int argc, char** argv) {
   while(1) {
     struct prometheus_process_info* prometheus_process_info = malloc(sizeof(struct prometheus_process_info));
@@ -285,3 +286,4 @@ int main(int argc, char** argv) {
 
   return 0;
 }
+#endif
