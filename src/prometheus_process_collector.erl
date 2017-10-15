@@ -2,15 +2,23 @@
 -on_load(init/0).
 -export([deregister_cleanup/1,
          collect_mf/2,
-         collect_metrics/2]).
+         collect_metrics/2,
+         get_process_info/0]).
 
 -import(prometheus_model_helpers, [create_mf/5,
-                                   label_pairs/1,
-                                   gauge_metrics/1,
+                                   counter_metrics/1,
+                                   counter_metric/1,
+                                   counter_metric/2,
                                    gauge_metric/1,
                                    gauge_metric/2,
-                                   counter_metric/1,
-                                   counter_metric/2]).
+                                   boolean_metric/1,
+                                   boolean_metric/2,
+                                   summary_metric/1,
+                                   summary_metric/2,
+                                   histogram_metric/1,
+                                   histogram_metric/2,
+                                   untyped_metric/1,
+                                   untyped_metric/2]).
 
 -behaviour(prometheus_collector).
 
@@ -18,6 +26,29 @@
 
 -define(APPNAME, prometheus_process_collector).
 -define(LIBNAME, prometheus_process_collector).
+
+-define(METRICS, [{process_open_fds, gauge,
+                   "Number of open file descriptors."},
+                  {process_max_fds, gauge,
+                   "Maximum number of open file descriptors."},
+                  {process_start_time_seconds, gauge,
+                   "Start time of the process since unix epoch in seconds."},
+                  {process_uptime_seconds, gauge,
+                   "Process uptime in seconds."},
+                  {process_threads_total, gauge,
+                   "Process Threads count."},
+                  {process_virtual_memory_bytes, gauge,
+                   "Virtual memory size in bytes."},
+                  {process_resident_memory_bytes, gauge,
+                   "Resident memory size in bytes."},
+                  {process_cpu_seconds_total, counter,
+                   "Process CPU seconds total.",
+                   fun(Info) ->
+                       counter_metrics([{[{kind, utime}],
+                                         proplists:get_value(process_utime_seconds, Info)},
+                                        {[{kind, stime}],
+                                         proplists:get_value(process_stime_seconds, Info)}])
+                   end}]).
 
 %% API exports
 -export([]).
@@ -29,125 +60,42 @@
 deregister_cleanup(_) -> ok.
 
 collect_mf(_Registry, Callback) ->
-
-  Stat = read_stat(),
-
-  Callback(create_gauge(process_open_fds,
-                        "Number of open file descriptors.",
-                        [])),
-
-  Callback(create_gauge(process_max_fds,
-                        "Maximum number of open file descriptors.",
-                        [])),
-
-  Callback(create_gauge(process_start_time_seconds,
-                        "Start time of the process since unix epoch in seconds.",
-                        [])),
-
-  Callback(create_gauge(process_uptime_seconds,
-                        "Process uptime in seconds.",
-                        [])),
-
-  Callback(create_gauge(process_threads_total,
-                        "Process Threads count.",
-                        Stat)),
-
-  Callback(create_gauge(process_virtual_memory_bytes,
-                        "Virtual memory size in bytes.",
-                        Stat)),
-
-  Callback(create_gauge(process_resident_memory_bytes,
-                        "Resident memory size in bytes.",
-                        Stat)),
-
-  %% Callback(create_gauge(process_heap_bytes,
-  %%                       "Heap size.",
-  %%                       Stat)),
-
-  Callback(create_counter(process_cpu_seconds_total,
-                          "Process CPU seconds total.",
-                          Stat)),
-
+  ProcessInfo = get_process_info(),
+  [mf(Callback, Metric, ProcessInfo) || Metric <- ?METRICS],
   ok.
 
-collect_metrics(process_open_fds, _) ->
-  gauge_metric(open_fds_count());
-collect_metrics(process_max_fds, _) ->
-  gauge_metric(max_fds_count());
-collect_metrics(process_start_time_seconds, _) ->
-  gauge_metric(start_time());
-collect_metrics(process_uptime_seconds, _) ->
-  gauge_metric(current_timestamp() - start_time());
-collect_metrics(process_threads_total, Stat) ->
-  gauge_metric(list_to_integer(lists:nth(20, Stat)));
-collect_metrics(process_virtual_memory_bytes, Stat) ->
-  gauge_metric(list_to_integer(lists:nth(23, Stat)));
-collect_metrics(process_resident_memory_bytes, Stat) ->
-  gauge_metric(sc_pagesize() * list_to_integer(lists:nth(24, Stat)));
-%% collect_metrics(process_heap_bytes, Stat) ->
-%%   ok.
-collect_metrics(process_cpu_seconds_total, Stat) ->
-  Ticks = sc_clk_tck(),
-  Utime = list_to_integer(lists:nth(14, Stat)) / Ticks,
-  Stime = list_to_integer(lists:nth(15, Stat)) / Ticks,
-  [counter_metric([{kind, utime}], Utime),
-   counter_metric([{kind, stime}], Stime)].
+collect_metrics(_, {Fun, Proplist}) ->
+  Fun(Proplist).
+
+mf(Callback, Metric, Proplist) ->
+  {Name, Type, Help, Fun} = case Metric of
+                              {Key, Type1, Help1} ->
+                                {Key, Type1, Help1, fun (Proplist1) ->
+                                                        metric(Type1, [], proplists:get_value(Key, Proplist1))
+                                                    end};
+                              {Key, Type1, Help1, Fun1} ->
+                                {Key, Type1, Help1, Fun1}
+                            end,
+  Callback(create_mf(Name, Help, Type, ?MODULE, {Fun, Proplist})).
 
 %%====================================================================
 %% Private Parts
 %%====================================================================
 
-current_timestamp() ->
-  {Mega, Sec, _} = os:timestamp(),
-  Mega*1000000 + Sec.
+metric(counter, Labels, Value) ->
+  counter_metric(Labels, Value);
+metric(gauge, Labels, Value) ->
+  gauge_metric(Labels, Value);
+metric(summary, Labels, Value0) ->
+  summary_metric(Labels, Value0);
+metric(histogram, Labels, Value0) ->
+  histogram_metric(Labels, Value0);
+metric(untyped, Labels, Value) ->
+  untyped_metric(Labels, Value);
+metric(boolean, Labels, Value0) ->
+  boolean_metric(Labels, Value0).
 
-start_time() ->
-  Stat = read_stat(),
-  round(list_to_integer(lists:nth(22, Stat)) / sc_clk_tck()) + get_btime().
-
-get_btime () ->
-  Content = read_proc_file("/proc/stat"),
-  {match, [{Start, Length}]} = re:run(Content, "btime [\\d]+"),
-  list_to_integer(string:sub_string(Content, Start + 7, Start + Length)).
-
-open_fds_count() ->
-  files_count("/proc/self/fd").
-
-max_fds_count() ->
-  Content = read_proc_file("/proc/self/limits"),
-  R = re:run(Content, "Max open files[\\s]+[\\d]+"),
-  {match, [{Start, Length}]} = R,
-  list_to_integer(lists:nth(4, string:tokens(string:sub_string(Content, Start, Start + Length), " "))).
-
-read_stat() ->
-  Content = read_proc_file("/proc/self/stat"),
-  string:tokens(Content, " ").
-
-read_proc_file(FileName) ->
-  {ok, Device} = file:open(FileName, [read]),
-  try read_chunk(Device)
-  after file:close(Device)
-  end.
-
-read_chunk(Device) ->
-  case io:get_line(Device, ?CHUNK_SIZE) of
-    eof  -> [];
-    Content -> Content ++ read_chunk(Device)
-  end.
-
-create_gauge(Name, Help, Data) ->
-  create_mf(Name, Help, gauge, ?MODULE, Data).
-
-create_counter(Name, Help, Data) ->
-  create_mf(Name, Help, counter, ?MODULE, Data).
-
-sc_clk_tck() ->
-  not_loaded(?LINE).
-
-sc_pagesize() ->
-  not_loaded(?LINE).
-
-files_count(_Path) ->
+get_process_info() ->
   not_loaded(?LINE).
 
 init() ->
