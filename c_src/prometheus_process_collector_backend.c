@@ -1,11 +1,4 @@
 #define _GNU_SOURCE
-#include <dirent.h>
-#include <unistd.h>
-#include <sys/param.h>
-#include <sys/sysctl.h>
-#include <sys/user.h>
-#include <sys/types.h>
-#include <libutil.h>
 
 #include "prometheus_process_collector.h"
 
@@ -31,7 +24,7 @@ static long pagesize(void)
   from https://github.com/freebsd/freebsd/blob/9e0a154b0fd5fa9010238ac9497ec59f84167c92/lib/libutil/kinfo_getfile.c#L22-L51
   I don't need unpacked structs here, just count. Hope it won't break someday.
 */
-static int get_process_open_fds(pid_t pid, int* count)
+static int get_process_open_fd_counts(pid_t pid, int* count)
 {
   int mib[4];
   int error;
@@ -81,6 +74,35 @@ static int get_process_open_fds(pid_t pid, int* count)
   return 0;
 }
 
+#endif
+
+#ifdef __linux__
+static int get_process_open_fd_counts(pid_t pid, int* count)
+{
+  static char fd_path[32];
+
+  sprintf(fd_path, "/proc/%d/fd", pid);
+
+  int file_count = 0;
+  DIR* dirp;
+  struct dirent* entry;
+  dirp = opendir(fd_path);
+  if (dirp == NULL) {
+    return 1;
+  }
+  while ((entry = readdir(dirp)) != NULL) {
+    if (entry->d_type == DT_LNK) {
+      file_count++;
+    }
+  }
+  closedir(dirp);
+  *count = file_count;
+  return 0;
+}
+
+#endif
+
+#ifdef __FreeBSD__
 static int get_process_limit(pid_t pid, int resource, struct rlimit* rlp)
 {
   int name[5];
@@ -94,20 +116,138 @@ static int get_process_limit(pid_t pid, int resource, struct rlimit* rlp)
   len = sizeof(*rlp);
   return sysctl(name, 5, rlp, &len, NULL, 0);
 }
+#endif
+
+#ifdef __linux__
+static int get_process_limit(pid_t pid, int resource, struct rlimit* rlp)
+{
+  UNUSED(pid);
+  return getrlimit(resource, rlp);
+}
+#endif
+
+#ifdef __linux__
+
+static int clk_tck(long *clk_tck)
+{
+  long result = sysconf(_SC_CLK_TCK);
+
+  if(result == -1 || result == 0){
+    return 1;
+  }
+
+  *clk_tck = result;
+  return 0;
+}
+
+static int system_boot_time(long *boot_time)
+{
+  FILE *fd;
+  char *stat_line = NULL;
+  size_t len = 0;
+  ssize_t read;
+
+  fd = fopen("/proc/stat", "r");
+  if (fd == NULL) {
+    return 1;
+  }
+
+  while ((read = getline(&stat_line, &len, fd)) != -1 &&
+         !sscanf(stat_line, "btime %ld", boot_time)) {
+  }
+
+  fclose(fd);
+  if (stat_line)
+    free(stat_line);
+
+
+  return 0;
+}
+
+#define MAX_STAT 24
+
+static unsigned long get_process_stat(int index, char *stat[]) {
+  char *dummy;
+  return strtoul(stat[index], &dummy, 10);
+}
+
+static struct kinfo_proc* kinfo_getproc(pid_t pid)
+{
+  long ticks;
+  if(clk_tck(&ticks)) {
+    return NULL;
+  }
+
+  long boot_time;
+  if(system_boot_time(&boot_time)) {
+    return NULL;
+  }
+  
+  static char stat_path[32];
+  sprintf(stat_path, "/proc/%d/stat", pid);
+
+  char *stat_line = NULL;
+  size_t len = 0;
+  FILE *fd = fopen(stat_path, "r");
+  if(!fd) {
+    return NULL;
+  }
+
+  if(getline(&stat_line, &len, fd) == -1) {
+    if (stat_line) {
+      free(stat_line);
+    }
+    return NULL;
+  }
+  fclose(fd);
+
+  char *old_stat_line = stat_line;
+  int index = 0;  
+  char *stat[MAX_STAT + 1];
+  
+  while (index < MAX_STAT) {
+    stat[index] = strsep(&stat_line, " ");
+    index++;
+  }
+
+  struct kinfo_proc *proc = malloc(sizeof(struct kinfo_proc));
+
+  struct timeval ki_start;
+  ki_start.tv_sec = get_process_stat(21, stat)/ticks + boot_time;;
+  proc->ki_start = ki_start;
+
+  proc->ki_numthreads = get_process_stat(19, stat);
+
+  proc->ki_size = get_process_stat(22, stat);
+  
+  proc->ki_rssize = get_process_stat(23, stat);
+
+  struct rusage ki_rusage;
+  ki_rusage.ru_utime.tv_sec = get_process_stat(13, stat)/ticks;
+  ki_rusage.ru_stime.tv_sec = get_process_stat(14, stat)/ticks;
+  proc->ki_rusage = ki_rusage;
+
+  free(old_stat_line);
+  return proc;
+}
+#endif
 
 int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info* prometheus_process_info)
 {
   struct kinfo_proc *proc = kinfo_getproc(pid);
+  //printf("proc alloced at %p\r\n", proc);
 
   if(!proc) {
     return 1;
   }
 
-  if(get_process_open_fds(pid, &prometheus_process_info->pids_count)) {
+  int pids_count;
+  if(get_process_open_fd_counts(pid, &pids_count)) {
     return 1;
   }
+  prometheus_process_info->pids_count = pids_count;
 
-  struct rlimit rlimit; // no need to free
+  struct rlimit rlimit;
   if(get_process_limit(pid, RLIMIT_NOFILE, &rlimit)) {
     return 1;
   } else {
@@ -116,7 +256,7 @@ int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info* prom
 
   prometheus_process_info->start_time_seconds = proc->ki_start.tv_sec;
 
-  time_t now; // no need to free
+  time_t now;
   time(&now);
   prometheus_process_info->uptime_seconds = now - proc->ki_start.tv_sec;
 
@@ -135,72 +275,13 @@ int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info* prom
   return 0;
 }
 
-#endif
+int main(int argc, char** argv) {
+  while(1) {
+    struct prometheus_process_info* prometheus_process_info = malloc(sizeof(struct prometheus_process_info));
+    // printf("prometheus_process_info alloced at %p\r\n", prometheus_process_info);
+    fill_prometheus_process_info(36762, prometheus_process_info);    
+    free(prometheus_process_info);
+  }
 
-/* #ifdef __linux__ */
-
-/* static ERL_NIF_TERM */
-/* sc_clk_tck(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) */
-/* { */
-/*   if(argc != 0) */
-/*     { */
-/*       return enif_make_badarg(env); */
-/*     } */
-
-/*   long result = sysconf(_SC_CLK_TCK); */
-
-/*   if(result == -1 || result == 0) */
-/*     { */
-/*       return mk_error(env, "sysconf_fail"); */
-/*     } */
-
-/*   return enif_make_ulong(env, result); */
-/* } */
-
-/* static ERL_NIF_TERM */
-/* files_count(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) */
-/* { */
-/*   long file_count = 0; */
-/*   DIR* dirp; */
-/*   struct dirent* entry; */
-/*   char path[MAXBUFLEN]; */
-
-/*   enif_get_string(env, argv[0], path, 1024, ERL_NIF_LATIN1); */
-
-/*   if(argc != 1) */
-/*     { */
-/*       return enif_make_badarg(env); */
-/*     } */
-
-/*   dirp = opendir(path); */
-/*   if (dirp == NULL) { */
-/*     return mk_error(env, "opendir_fail"); */
-/*   } */
-/*   while ((entry = readdir(dirp)) != NULL) { */
-/*     if (entry->d_type == DT_LNK) { */
-/*       file_count++; */
-/*     } */
-/*   } */
-/*   closedir(dirp); */
-/*   return enif_make_ulong(env, file_count); */
-/* } */
-
-/* #endif */
-
-/* static ERL_NIF_TERM */
-/* sc_pagesize(ErlNifEnv* env, int argc, const ERL_NIF_TERM argv[]) */
-/* { */
-/*   if(argc != 0) */
-/*     { */
-/*       return enif_make_badarg(env); */
-/*     } */
-
-/*   long result = sysconf(_SC_PAGESIZE); */
-
-/*   if(result == -1 || result == 0) */
-/*     { */
-/*       return mk_error(env, "sysconf_fail"); */
-/*     } */
-
-/*   return enif_make_ulong(env, result); */
-/* } */
+  return 0;
+}

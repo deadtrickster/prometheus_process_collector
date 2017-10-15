@@ -1,6 +1,5 @@
 #define _GNU_SOURCE
 #include "erl_nif.h"
-#include <dirent.h>
 #include <unistd.h>
 
 #include "prometheus_process_collector.h"
@@ -53,6 +52,7 @@ static ERL_NIF_TERM get_process_info(ErlNifEnv* env, int argc, const ERL_NIF_TER
   process_info_plist[7] = enif_make_tuple2(env, ATOM_PROCESS_UTIME_SECONDS, enif_make_long(env, prometheus_process_info->utime_seconds));
   process_info_plist[8] = enif_make_tuple2(env, ATOM_PROCESS_STIME_SECONDS, enif_make_long(env, prometheus_process_info->stime_seconds));
 
+  free(prometheus_process_info);
   return enif_make_list_from_array(env, process_info_plist, 9);
 }
 

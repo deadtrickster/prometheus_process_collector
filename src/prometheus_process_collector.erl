@@ -2,7 +2,8 @@
 -on_load(init/0).
 -export([deregister_cleanup/1,
          collect_mf/2,
-         collect_metrics/2]).
+         collect_metrics/2,
+         get_process_info/0]).
 
 -import(prometheus_model_helpers, [create_mf/5,
                                    counter_metrics/1,
@@ -63,7 +64,7 @@ collect_mf(_Registry, Callback) ->
   [mf(Callback, Metric, ProcessInfo) || Metric <- ?METRICS],
   ok.
 
-collect_metrics(_, {Type, Fun, Proplist}) ->
+collect_metrics(_, {Fun, Proplist}) ->
   Fun(Proplist).
 
 mf(Callback, Metric, Proplist) ->
@@ -75,7 +76,7 @@ mf(Callback, Metric, Proplist) ->
                               {Key, Type1, Help1, Fun1} ->
                                 {Key, Type1, Help1, Fun1}
                             end,
-  Callback(create_mf(Name, Help, Type, ?MODULE, {Type, Fun, Proplist})).
+  Callback(create_mf(Name, Help, Type, ?MODULE, {Fun, Proplist})).
 
 %%====================================================================
 %% Private Parts
@@ -93,62 +94,6 @@ metric(untyped, Labels, Value) ->
   untyped_metric(Labels, Value);
 metric(boolean, Labels, Value0) ->
   boolean_metric(Labels,Value0).
-
-%% current_timestamp() ->
-%%   {Mega, Sec, _} = os:timestamp(),
-%%   Mega*1000000 + Sec.
-
-%% start_time() ->
-%%   Stat = read_stat(),
-%%   round(list_to_integer(lists:nth(22, Stat)) / sc_clk_tck()) + get_btime().
-
-%% get_btime () ->
-%%   Content = read_proc_file("/proc/stat"),
-%%   {match, [{Start, Length}]} = re:run(Content, "btime [\\d]+"),
-%%   list_to_integer(string:sub_string(Content, Start + 7, Start + Length)).
-
-%% open_fds_count() ->
-%%   files_count("/proc/self/fd").
-
-%% max_fds_count() ->
-%%   Content = read_proc_file("/proc/self/limits"),
-%%   R = re:run(Content, "Max open files[\\s]+[\\d]+"),
-%%   {match, [{Start, Length}]} = R,
-%%   list_to_integer(lists:nth(4, string:tokens(string:sub_string(Content, Start, Start + Length), " "))).
-
-%% read_stat() ->
-%%   Content = read_proc_file("/proc/self/stat"),
-%%   string:tokens(Content, " ").
-
-%% read_proc_file(FileName) ->
-%%   {ok, Device} = file:open(FileName, [read]),
-%%   try read_chunk(Device)
-%%   after file:close(Device)
-%%   end.
-
-%% read_chunk(Device) ->
-%%   case io:get_line(Device, ?CHUNK_SIZE) of
-%%     eof  -> [];
-%%     Content -> Content ++ read_chunk(Device)
-%%   end.
-
-%% create_gauge(Name, Help, Data) ->
-%%   create_mf(Name, Help, gauge, ?MODULE, Data).
-
-%% create_counter(Name, Help, Data) ->
-%%   create_mf(Name, Help, counter, ?MODULE, Data).
-
-%% sc_clk_tck() ->
-%%   not_loaded(?LINE).
-
-%% sc_pagesize() ->
-%%   not_loaded(?LINE).
-
-%% files_count(_Path) ->
-%%   not_loaded(?LINE).
-
-get_process_info(_Pid) ->
-  not_loaded(?LINE).
 
 get_process_info() ->
   not_loaded(?LINE).
