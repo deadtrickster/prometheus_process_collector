@@ -36,7 +36,7 @@ static ERL_NIF_TERM get_process_info(ErlNifEnv* env, int argc, const ERL_NIF_TER
     pid = getpid();
   }
 
-  struct prometheus_process_info* prometheus_process_info = (struct prometheus_process_info*)malloc(sizeof(prometheus_process_info));
+  struct prometheus_process_info* prometheus_process_info = malloc(sizeof(struct prometheus_process_info));
 
   if(fill_prometheus_process_info(pid, prometheus_process_info)) {
     return ATOM_ERROR;
