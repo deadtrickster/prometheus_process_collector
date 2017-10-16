@@ -4,6 +4,8 @@ defmodule PrometheusProcessCollector.Mixfile do
   def project do
     [app: :prometheus_process_collector,
      version: "1.1.0",
+     compilers: [:elixir_make] ++ Mix.compilers,
+     make_cwd: "c_src",
      description: description(),
      package: package(),
      deps: deps()]
@@ -32,7 +34,9 @@ defmodule PrometheusProcessCollector.Mixfile do
   end
 
   defp deps do
-    [{:prometheus, "~> 3.3"}
+    [
+      {:prometheus, "~> 3.4"},
+      {:elixir_make, "~> 0.4", runtime: false},
     ]
   end
 end
