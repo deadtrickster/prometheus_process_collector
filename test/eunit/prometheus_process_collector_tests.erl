@@ -19,5 +19,14 @@ test_process_collector(_) ->
    ?_assertMatch({match, _}, re:run(Metrics, "process_threads_total [1-9]")),
    ?_assertMatch({match, _}, re:run(Metrics, "process_virtual_memory_bytes [1-9]")),
    ?_assertMatch({match, _}, re:run(Metrics, "process_resident_memory_bytes [1-9]")),
-   ?_assertMatch({match, _}, re:run(Metrics, "process_cpu_seconds_total{kind=\"(utime|stime)\"} [0-9]"))
+   ?_assertMatch({match, _}, re:run(Metrics, "process_cpu_seconds_total{kind=\"(utime|stime)\"} [0-9.]")),
+   ?_assertMatch({match, _}, re:run(Metrics, "process_max_resident_memory_bytes [1-9]")),
+   ?_assertMatch({match, _}, re:run(Metrics, "process_noio_pagefaults_total [0-9]")),
+   ?_assertMatch({match, _}, re:run(Metrics, "process_io_pagefaults_total [0-9]")),
+   ?_assertMatch({match, _}, re:run(Metrics, "process_swaps_total [0-9]")),
+   ?_assertMatch({match, _}, re:run(Metrics, "process_disk_reads_total [0-9]")),
+   ?_assertMatch({match, _}, re:run(Metrics, "process_disk_writes_total [0-9]")),
+   ?_assertMatch({match, _}, re:run(Metrics, "process_signals_delivered_total [0-9]")),
+   ?_assertMatch({match, _}, re:run(Metrics, "process_voluntary_context_switches_total [0-9]")),
+   ?_assertMatch({match, _}, re:run(Metrics, "process_involuntary_context_switches_total [0-9]"))
   ].

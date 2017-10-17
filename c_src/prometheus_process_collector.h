@@ -26,15 +26,24 @@
 
 struct prometheus_process_info
 {
-  int pids_count;
+  int pids_total;
   rlim_t pids_limit;
   time_t start_time_seconds;
   long uptime_seconds;
-  int threads_count;
+  int threads_total;
   unsigned long vm_bytes;
   unsigned long rm_bytes;
-  long utime_seconds;
-  long stime_seconds;
+  double utime_seconds;
+  double stime_seconds;
+  long max_rm_bytes;
+  long noio_pagefaults_total;
+  long io_pagefaults_total;
+  long swaps_total;
+  long disk_reads_total;
+  long disk_writes_total;
+  long signals_delivered_total;
+  long voluntary_context_switches_total;
+  long involuntary_context_switches_total;
 };
 
 #ifdef __linux__
@@ -49,7 +58,7 @@ struct kinfo_proc {
 
 #endif
 
-#define PROCESS_INFO_COUNT 9
+#define PROCESS_INFO_COUNT 18
 
 int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info* prometheus_process_info);
 

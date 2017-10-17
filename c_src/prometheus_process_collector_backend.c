@@ -24,7 +24,7 @@ static long pagesize(void)
   from https://github.com/freebsd/freebsd/blob/9e0a154b0fd5fa9010238ac9497ec59f84167c92/lib/libutil/kinfo_getfile.c#L22-L51
   I don't need unpacked structs here, just count. Hope it won't break someday.
 */
-static int get_process_open_fd_counts(pid_t pid, int* count)
+static int get_process_open_fd_totals(pid_t pid, int* count)
 {
   int mib[4];
   int error;
@@ -77,13 +77,13 @@ static int get_process_open_fd_counts(pid_t pid, int* count)
 #endif
 
 #ifdef __linux__
-static int get_process_open_fd_counts(pid_t pid, int* count)
+static int get_process_open_fd_totals(pid_t pid, int* count)
 {
   static char fd_path[32];
 
   sprintf(fd_path, "/proc/%d/fd", pid);
 
-  int file_count = 0;
+  int file_total = 0;
   DIR* dirp;
   struct dirent* entry;
   dirp = opendir(fd_path);
@@ -92,11 +92,11 @@ static int get_process_open_fd_counts(pid_t pid, int* count)
   }
   while ((entry = readdir(dirp)) != NULL) {
     if (entry->d_type == DT_LNK) {
-      file_count++;
+      file_total++;
     }
   }
   closedir(dirp);
-  *count = file_count;
+  *count = file_total;
   return 0;
 }
 
@@ -133,6 +133,7 @@ static int clk_tck(long *clk_tck)
   long result = sysconf(_SC_CLK_TCK);
 
   if(result == -1 || result == 0){
+    // printf("failed on clk_tck\r\n");
     return 1;
   }
 
@@ -149,6 +150,7 @@ static int system_boot_time(long *boot_time)
 
   fd = fopen("/proc/stat", "r");
   if (fd == NULL) {
+    // printf("failed on /proc/stat\r\n");
     return 1;
   }
 
@@ -175,14 +177,16 @@ static struct kinfo_proc* kinfo_getproc(pid_t pid)
 {
   long ticks;
   if(clk_tck(&ticks)) {
+    // printf("failed on ticks");
     return NULL;
   }
 
   long boot_time;
   if(system_boot_time(&boot_time)) {
+    // printf("failed on boottime\r\n");
     return NULL;
   }
-  
+
   static char stat_path[32];
   sprintf(stat_path, "/proc/%d/stat", pid);
 
@@ -190,6 +194,7 @@ static struct kinfo_proc* kinfo_getproc(pid_t pid)
   size_t len = 0;
   FILE *fd = fopen(stat_path, "r");
   if(!fd) {
+    // printf("failed on stat\r\n");
     return NULL;
   }
 
@@ -197,14 +202,15 @@ static struct kinfo_proc* kinfo_getproc(pid_t pid)
     if (stat_line) {
       free(stat_line);
     }
+    // printf("failed on getline\r\n");
     return NULL;
   }
   fclose(fd);
 
   char *old_stat_line = stat_line;
-  int index = 0;  
+  int index = 0;
   char *stat[MAX_STAT + 1];
-  
+
   while (index < MAX_STAT) {
     stat[index] = strsep(&stat_line, " ");
     index++;
@@ -219,12 +225,13 @@ static struct kinfo_proc* kinfo_getproc(pid_t pid)
   proc->ki_numthreads = get_process_stat(19, stat);
 
   proc->ki_size = get_process_stat(22, stat);
-  
+
   proc->ki_rssize = get_process_stat(23, stat);
 
   struct rusage ki_rusage;
-  ki_rusage.ru_utime.tv_sec = get_process_stat(13, stat)/ticks;
-  ki_rusage.ru_stime.tv_sec = get_process_stat(14, stat)/ticks;
+  getrusage(RUSAGE_SELF, &ki_rusage);
+  /* ki_rusage.ru_utime.tv_sec = get_process_stat(13, stat)/ticks; */
+  /* ki_rusage.ru_stime.tv_sec = get_process_stat(14, stat)/ticks; */
   proc->ki_rusage = ki_rusage;
 
   free(old_stat_line);
@@ -235,20 +242,23 @@ static struct kinfo_proc* kinfo_getproc(pid_t pid)
 int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info* prometheus_process_info)
 {
   struct kinfo_proc *proc = kinfo_getproc(pid);
-  //printf("proc alloced at %p\r\n", proc);
+  // printf("proc alloced at %p\r\n", proc);
 
   if(!proc) {
+    // printf("failed on kinfo_getproc\r\n");
     return 1;
   }
 
-  int pids_count;
-  if(get_process_open_fd_counts(pid, &pids_count)) {
+  int pids_total;
+  if(get_process_open_fd_totals(pid, &pids_total)) {
+    // printf("failed on get open fds\r\n");
     return 1;
   }
-  prometheus_process_info->pids_count = pids_count;
+  prometheus_process_info->pids_total = pids_total;
 
   struct rlimit rlimit;
   if(get_process_limit(pid, RLIMIT_NOFILE, &rlimit)) {
+    // printf("failed on get process limits\r\n");
     return 1;
   } else {
     prometheus_process_info->pids_limit = rlimit.rlim_cur;
@@ -260,15 +270,25 @@ int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info* prom
   time(&now);
   prometheus_process_info->uptime_seconds = now - proc->ki_start.tv_sec;
 
-  prometheus_process_info->threads_count = proc->ki_numthreads;
+  prometheus_process_info->threads_total = proc->ki_numthreads;
 
   prometheus_process_info->vm_bytes = proc->ki_size;
 
   prometheus_process_info->rm_bytes = proc->ki_rssize * pagesize();
 
   struct rusage rusage = proc->ki_rusage;
-  prometheus_process_info->utime_seconds = rusage.ru_utime.tv_sec;
-  prometheus_process_info->stime_seconds = rusage.ru_stime.tv_sec;
+  // printf("MAXRSS: %ld\r\n", rusage.ru_inblock),
+  prometheus_process_info->utime_seconds = rusage.ru_utime.tv_sec + rusage.ru_utime.tv_usec/1000000.0d;
+  prometheus_process_info->stime_seconds = rusage.ru_stime.tv_sec + rusage.ru_stime.tv_usec/1000000.0d;
+  prometheus_process_info->max_rm_bytes = rusage.ru_maxrss * 1024;
+  prometheus_process_info->noio_pagefaults_total = rusage.ru_minflt;
+  prometheus_process_info->io_pagefaults_total = rusage.ru_majflt;
+  prometheus_process_info->swaps_total = rusage.ru_nswap;
+  prometheus_process_info->disk_reads_total = rusage.ru_inblock;
+  prometheus_process_info->disk_writes_total = rusage.ru_oublock;
+  prometheus_process_info->signals_delivered_total = rusage.ru_nsignals;
+  prometheus_process_info->voluntary_context_switches_total = rusage.ru_nvcsw;
+  prometheus_process_info->involuntary_context_switches_total = rusage.ru_nivcsw;
 
   free(proc);
 
@@ -277,18 +297,18 @@ int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info* prom
 
 #ifdef __STANDALONE_TEST__
 int main(int argc, char** argv) {
-  
+
   if(argc != 2) {
-    printf("Usage: %s <iterations>\n", argv[0]);
+    // printf("Usage: %s <iterations>\n", argv[0]);
     return 1;
   }
 
-  
+
   char *dummy;
   unsigned long iterations = strtoul(argv[1], &dummy, 10);
 
   if(*dummy != '\0') {
-    printf("Iterations must be an integer\n");
+    // printf("Iterations must be an integer\n");
     return 1;
   }
 
@@ -297,7 +317,7 @@ int main(int argc, char** argv) {
   while(iterations--) {
     struct prometheus_process_info* prometheus_process_info = malloc(sizeof(struct prometheus_process_info));
     // printf("prometheus_process_info alloced at %p\r\n", prometheus_process_info);
-    fill_prometheus_process_info(pid, prometheus_process_info);    
+    fill_prometheus_process_info(pid, prometheus_process_info);
     free(prometheus_process_info);
   }
 
