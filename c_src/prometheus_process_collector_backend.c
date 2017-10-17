@@ -278,8 +278,8 @@ int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info* prom
 
   struct rusage rusage = proc->ki_rusage;
   // printf("MAXRSS: %ld\r\n", rusage.ru_inblock),
-  prometheus_process_info->utime_seconds = rusage.ru_utime.tv_sec + rusage.ru_utime.tv_usec/1000000.0d;
-  prometheus_process_info->stime_seconds = rusage.ru_stime.tv_sec + rusage.ru_stime.tv_usec/1000000.0d;
+  prometheus_process_info->utime_seconds = rusage.ru_utime.tv_sec + rusage.ru_utime.tv_usec/1000000.00;
+  prometheus_process_info->stime_seconds = rusage.ru_stime.tv_sec + rusage.ru_stime.tv_usec/1000000.00;
   prometheus_process_info->max_rm_bytes = rusage.ru_maxrss * 1024;
   prometheus_process_info->noio_pagefaults_total = rusage.ru_minflt;
   prometheus_process_info->io_pagefaults_total = rusage.ru_majflt;
