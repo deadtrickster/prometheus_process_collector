@@ -12,6 +12,9 @@ ERL_INTERFACE_LIB_DIR ?= $(shell erl -noshell -s init stop -eval "io:format(\"~s
 
 C_SRC_DIR = $(CURDIR)
 C_SRC_OUTPUT ?= $(CURDIR)/../priv/$(PROJECT).so
+MEMTEST_OUTPUT ?= $(CURDIR)/../_build/prometheus_process_collector_backend
+
+.PHONY: memory-test
 
 # System type and C compiler/flags.
 
@@ -23,11 +26,13 @@ ifeq ($(UNAME_SYS), Darwin)
 	LDFLAGS ?= -arch x86_64 -flat_namespace -undefined suppress
 else ifeq ($(UNAME_SYS), FreeBSD)
 	CC ?= cc
+	CEFLAGS ?= -D__STANDALONE_TEST__ -std=c99 -Wall -Wmissing-prototypes
 	CFLAGS ?= -O3 -std=c99 -finline-functions -Wall -Wmissing-prototypes
 	CXXFLAGS ?= -O3 -finline-functions -Wall
 else ifeq ($(UNAME_SYS), Linux)
 	CC ?= gcc
 	CFLAGS ?= -O3 -std=c99 -finline-functions -Wall -Wmissing-prototypes
+	CEFLAGS ?= -D__STANDALONE_TEST__ -std=c99 -Wall -Wmissing-prototypes
 	CXXFLAGS ?= -O3 -finline-functions -Wall
 endif
 
@@ -69,6 +74,11 @@ $(C_SRC_OUTPUT): $(OBJECTS)
 
 %.o: %.cpp
 	$(COMPILE_CPP) $(OUTPUT_OPTION) $<
+
+memory-test:
+	@mkdir -p $(BASEDIR)/_build/
+	$(CC) $(CEFLAGS) prometheus_process_collector_backend.c -o $(MEMTEST_OUTPUT)
+	valgrind --leak-check=full --error-exitcode=1 $(MEMTEST_OUTPUT) 2
 
 clean:
 	@rm -f $(C_SRC_OUTPUT) $(OBJECTS)

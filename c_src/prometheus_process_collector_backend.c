@@ -277,10 +277,27 @@ int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info* prom
 
 #ifdef __STANDALONE_TEST__
 int main(int argc, char** argv) {
-  while(1) {
+  
+  if(argc != 2) {
+    printf("Usage: %s <iterations>\n", argv[0]);
+    return 1;
+  }
+
+  
+  char *dummy;
+  unsigned long iterations = strtoul(argv[1], &dummy, 10);
+
+  if(*dummy != '\0') {
+    printf("Iterations must be an integer\n");
+    return 1;
+  }
+
+  pid_t pid = getpid();
+
+  while(iterations--) {
     struct prometheus_process_info* prometheus_process_info = malloc(sizeof(struct prometheus_process_info));
     // printf("prometheus_process_info alloced at %p\r\n", prometheus_process_info);
-    fill_prometheus_process_info(36762, prometheus_process_info);    
+    fill_prometheus_process_info(pid, prometheus_process_info);    
     free(prometheus_process_info);
   }
 
