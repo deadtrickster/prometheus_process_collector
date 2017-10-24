@@ -1,25 +1,24 @@
 #ifndef PROMETHEUS_PROCESS_COLLECTOR_BACKEND_H
 #define PROMETHEUS_PROCESS_COLLECTOR_BACKEND_H
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <unistd.h>
-#include <sys/param.h>
-#include <sys/sysctl.h>
-#include <sys/user.h>
-#include <sys/types.h>
 
 #ifdef __FreeBSD__
 #include <libutil.h>
+#include <sys/param.h>
+#include <sys/sysctl.h>
 #include <sys/types.h>
+#include <sys/user.h>
 #endif
 
 #ifdef __linux__
 #include <dirent.h>
-#include <string.h>
-#include <time.h>
-#include <sys/resource.h>
 #include <errno.h>
+#include <string.h>
+#include <sys/resource.h>
+#include <time.h>
 #endif
 
 #define UNUSED(x) (void)(x)
