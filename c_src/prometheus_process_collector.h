@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#ifdef __FreeBSD__
+#if defined(__FreeBSD__) || defined(__APPLE__)
 #include <libutil.h>
 #include <sys/sysctl.h>
 #include <sys/user.h>

@@ -21,8 +21,8 @@ MEMTEST_OUTPUT ?= $(CURDIR)/../_build/prometheus_process_collector_backend
 UNAME_SYS := $(shell uname -s)
 ifeq ($(UNAME_SYS), Darwin)
 	CC ?= cc
-	CFLAGS ?= -O3 -std=c99 -arch x86_64 -finline-functions -Wall -Wmissing-prototypes
-	CXXFLAGS ?= -O3 -arch x86_64 -finline-functions -Wall
+	CFLAGS ?= -O3 -std=c99 -arch x86_64 -finline-functions -lutil -Wall -Wmissing-prototypes
+	CXXFLAGS ?= -O3 -arch x86_64 -finline-functions -lutil -Wall
 	LDFLAGS ?= -arch x86_64 -flat_namespace -undefined suppress
 else ifeq ($(UNAME_SYS), FreeBSD)
 	CC ?= cc
