@@ -7,9 +7,7 @@
 
 #ifdef __FreeBSD__
 #include <libutil.h>
-#include <sys/param.h>
 #include <sys/sysctl.h>
-#include <sys/types.h>
 #include <sys/user.h>
 #endif
 
