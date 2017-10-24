@@ -6,7 +6,6 @@
 #include <unistd.h>
 
 #if defined(__FreeBSD__) || defined(__APPLE__)
-#include <libutil.h>
 #include <sys/sysctl.h>
 #include <sys/user.h>
 #endif

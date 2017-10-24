@@ -239,6 +239,39 @@ static struct kinfo_proc* kinfo_getproc(pid_t pid)
 }
 #endif
 
+#if defined(__FreeBSD__) || defined(__APPLE__)
+static struct kinfo_proc* kinfo_getproc(pid_t pid) {
+  struct kinfo_proc *kipp;
+  int mib[4];
+  size_t len;
+
+  len = 0;
+  mib[0] = CTL_KERN;
+  mib[1] = KERN_PROC;
+  mib[2] = KERN_PROC_PID;
+  mib[3] = pid;
+  if (sysctl(mib, 4, NULL, &len, NULL, 0) < 0)
+    return (NULL);
+
+  kipp = malloc(len);
+  if (kipp == NULL)
+    return (NULL);
+
+  if (sysctl(mib, 4, kipp, &len, NULL, 0) < 0)
+    goto bad;
+  if (len != sizeof(*kipp))
+    goto bad;
+  if (kipp->ki_structsize != sizeof(*kipp))
+    goto bad;
+  if (kipp->ki_pid != pid)
+    goto bad;
+  return (kipp);
+ bad:
+  free(kipp);
+  return (NULL);
+}
+#endif
+
 int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info* prometheus_process_info)
 {
   struct kinfo_proc *proc = kinfo_getproc(pid);
