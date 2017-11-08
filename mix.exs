@@ -5,7 +5,7 @@ defmodule PrometheusProcessCollector.Mixfile do
     [app: :prometheus_process_collector,
      version: "1.2.4",
      compilers: [:elixir_make] ++ Mix.compilers,
-     make_cwd: "c_src",
+     # make_cwd: "c_src",
      description: description(),
      package: package(),
      deps: deps()]
@@ -30,13 +30,13 @@ defmodule PrometheusProcessCollector.Mixfile do
               "Ecto Instrumenter" => "https://hex.pm/packages/prometheus_ecto",
               "Phoenix Instrumenter" => "https://hex.pm/packages/prometheus_phoenix",
               "Plugs Instrumenter/Exporter" => "https://hex.pm/packages/prometheus_plugs"},
-     files: ["c_src/*.h", "c_src/*.c", "c_src/Makefile", "src", "README.md", "LICENSE", "rebar.config", "mix.exs"]]
+     files: ["c_src/*.h", "c_src/*.c", "c_src/Makefile", "src", "README.md", "LICENSE", "rebar.config"]
   end
 
   defp deps do
     [
-      {:prometheus, "~> 3.4"},
-      {:elixir_make, "~> 0.4", runtime: false},
+      {:prometheus, "~> 3.4"}# ,
+      # {:elixir_make, "~> 0.4", runtime: false},
     ]
   end
 end
