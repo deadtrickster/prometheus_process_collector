@@ -30,7 +30,7 @@ defmodule PrometheusProcessCollector.Mixfile do
               "Ecto Instrumenter" => "https://hex.pm/packages/prometheus_ecto",
               "Phoenix Instrumenter" => "https://hex.pm/packages/prometheus_phoenix",
               "Plugs Instrumenter/Exporter" => "https://hex.pm/packages/prometheus_plugs"},
-     files: ["c_src/*.h", "c_src/*.c", "c_src/Makefile", "src", "README.md", "LICENSE", "rebar.config"]
+     files: ["c_src/*.h", "c_src/*.c", "c_src/Makefile", "src", "README.md", "LICENSE", "rebar.config"]]
   end
 
   defp deps do
