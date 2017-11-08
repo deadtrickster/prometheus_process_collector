@@ -3,7 +3,7 @@ defmodule PrometheusProcessCollector.Mixfile do
 
   def project do
     [app: :prometheus_process_collector,
-     version: "1.2.3",
+     version: "1.2.4",
      compilers: [:elixir_make] ++ Mix.compilers,
      make_cwd: "c_src",
      description: description(),
