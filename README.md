@@ -16,7 +16,7 @@ When erlang is running in embedded mode this collector should be picked up autom
 mode (i.e. iex, mix, etc) it must be registered manually:
 
 ```erlang
-prometheus_registry:registry_collector(prometheus_process_collector)
+prometheus_registry:register_collector(prometheus_process_collector)
 ```
 
 ```elixir
