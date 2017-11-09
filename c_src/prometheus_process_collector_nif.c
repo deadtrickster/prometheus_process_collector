@@ -52,8 +52,8 @@ static ERL_NIF_TERM get_process_info(ErlNifEnv* env, int argc, const ERL_NIF_TER
     return ATOM_ERROR;
   }
 
-  process_info_plist[0] = enif_make_tuple2(env, ATOM_PROCESS_OPEN_FDS, enif_make_int(env, prometheus_process_info->pids_total));
-  process_info_plist[1] = enif_make_tuple2(env, ATOM_PROCESS_MAX_FDS, enif_make_int(env, prometheus_process_info->pids_limit));
+  process_info_plist[0] = enif_make_tuple2(env, ATOM_PROCESS_OPEN_FDS, enif_make_int(env, prometheus_process_info->fds_total));
+  process_info_plist[1] = enif_make_tuple2(env, ATOM_PROCESS_MAX_FDS, enif_make_int(env, prometheus_process_info->fds_limit));
   process_info_plist[2] = enif_make_tuple2(env, ATOM_PROCESS_START_TIME_SECONDS, enif_make_long(env, prometheus_process_info->start_time_seconds));
   process_info_plist[3] = enif_make_tuple2(env, ATOM_PROCESS_UPTIME_SECONDS, enif_make_long(env, prometheus_process_info->uptime_seconds));
   process_info_plist[4] = enif_make_tuple2(env, ATOM_PROCESS_THREADS_TOTAL, enif_make_int(env, prometheus_process_info->threads_total));

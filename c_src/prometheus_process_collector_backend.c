@@ -2,21 +2,24 @@
 
 #include "prometheus_process_collector.h"
 
+#ifdef __linux__
 static long pagesize(void)
 {
-#ifdef __linux__
   return sysconf(_SC_CLK_TCK);
+}
 #endif
 
 #ifdef __FreeBSD__
+static long pagesize(void)
+{
   int pageSize;
   size_t len = sizeof(pageSize);
   if (sysctlbyname("vm.stats.vm.v_page_size", &pageSize, &len, NULL, 0) == -1) {
     pageSize = sysconf(_SC_PAGESIZE);
   }
   return pageSize;
-#endif
 }
+#endif
 
 #ifdef __FreeBSD__
 
@@ -102,6 +105,31 @@ static int get_process_open_fd_totals(pid_t pid, int* count)
 
 #endif
 
+#ifdef __APPLE__
+static int get_process_open_fd_totals(pid_t pid, int* count)
+{
+  int pidinfo_result = proc_pidinfo(pid, PROC_PIDLISTFDS, 0, 0, 0);
+  if(pidinfo_result < 0) {
+    // printf("Can't get open fds");
+    return 1;
+  }
+  struct proc_fdinfo *temp_buffer;
+  temp_buffer = malloc(pidinfo_result);
+
+  pidinfo_result = proc_pidinfo(pid, PROC_PIDLISTFDS, 0,
+                                temp_buffer, pidinfo_result);
+
+  free(temp_buffer);
+
+  if(pidinfo_result < 0) {
+    // printf("Can't get open fds");
+    return 1;
+  }
+  *count = pidinfo_result / PROC_PIDLISTFD_SIZE;
+  return 0;
+}
+#endif
+
 #ifdef __FreeBSD__
 static int get_process_limit(pid_t pid, int resource, struct rlimit* rlp)
 {
@@ -118,7 +146,7 @@ static int get_process_limit(pid_t pid, int resource, struct rlimit* rlp)
 }
 #endif
 
-#ifdef __linux__
+#if defined(__linux__) || defined(__APPLE__)
 static int get_process_limit(pid_t pid, int resource, struct rlimit* rlp)
 {
   UNUSED(pid);
@@ -261,10 +289,12 @@ static struct kinfo_proc* kinfo_getproc(pid_t pid) {
     goto bad;
   if (len != sizeof(*kipp))
     goto bad;
+#if defined(__FreeBSD__)
   if (kipp->ki_structsize != sizeof(*kipp))
     goto bad;
   if (kipp->ki_pid != pid)
     goto bad;
+#endif
   return (kipp);
  bad:
   free(kipp);
@@ -282,25 +312,42 @@ int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info* prom
     return 1;
   }
 
-  int pids_total;
-  if(get_process_open_fd_totals(pid, &pids_total)) {
+  int fds_total;
+  if(get_process_open_fd_totals(pid, &fds_total)) {
     // printf("failed on get open fds\r\n");
     return 1;
   }
-  prometheus_process_info->pids_total = pids_total;
+  prometheus_process_info->fds_total = fds_total;
 
   struct rlimit rlimit;
   if(get_process_limit(pid, RLIMIT_NOFILE, &rlimit)) {
     // printf("failed on get process limits\r\n");
     return 1;
   } else {
-    prometheus_process_info->pids_limit = rlimit.rlim_cur;
+    prometheus_process_info->fds_limit = rlimit.rlim_cur;
   }
-
-  prometheus_process_info->start_time_seconds = proc->ki_start.tv_sec;
 
   time_t now;
   time(&now);
+
+#ifdef __APPLE__
+
+  prometheus_process_info->start_time_seconds = proc->kp_proc.p_starttime.tv_sec;
+
+  struct proc_taskinfo pti;
+
+  if(sizeof(pti) == proc_pidinfo(pid, PROC_PIDTASKINFO, 0, &pti, sizeof(pti))) {
+    prometheus_process_info->uptime_seconds = now - prometheus_process_info->start_time_seconds;
+    prometheus_process_info->threads_total = pti.pti_threadnum;
+    prometheus_process_info->vm_bytes = pti.pti_virtual_size;
+    prometheus_process_info->rm_bytes = pti.pti_resident_size;
+  } else {
+    // printf("failed on proc_pidinfo")
+    return 1;
+  }
+#else
+  prometheus_process_info->start_time_seconds = proc->ki_start.tv_sec;
+
   prometheus_process_info->uptime_seconds = now - proc->ki_start.tv_sec;
 
   prometheus_process_info->threads_total = proc->ki_numthreads;
@@ -308,8 +355,14 @@ int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info* prom
   prometheus_process_info->vm_bytes = proc->ki_size;
 
   prometheus_process_info->rm_bytes = proc->ki_rssize * pagesize();
+#endif
 
+#ifdef __APPLE__
+  struct rusage rusage;
+  getrusage(RUSAGE_SELF, &rusage);
+#else
   struct rusage rusage = proc->ki_rusage;
+#endif
   // printf("MAXRSS: %ld\r\n", rusage.ru_inblock),
   prometheus_process_info->utime_seconds = rusage.ru_utime.tv_sec + rusage.ru_utime.tv_usec/1000000.00;
   prometheus_process_info->stime_seconds = rusage.ru_stime.tv_sec + rusage.ru_stime.tv_usec/1000000.00;

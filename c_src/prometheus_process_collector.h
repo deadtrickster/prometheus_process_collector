@@ -18,12 +18,17 @@
 #include <time.h>
 #endif
 
+#ifdef __APPLE__
+#include <libproc.h>
+#include <sys/proc_info.h>
+#endif
+
 #define UNUSED(x) (void)(x)
 
 struct prometheus_process_info
 {
-  int pids_total;
-  rlim_t pids_limit;
+  int fds_total;
+  rlim_t fds_limit;
   time_t start_time_seconds;
   long uptime_seconds;
   int threads_total;
