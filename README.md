@@ -5,8 +5,9 @@
 
 Collector which exports the current state of process metrics including cpu, memory, file descriptor usage and native threads count as well as the process start and up times.
 
+- FreeBSD;
 - Linux - uses /proc;
-- FreeBSD.
+- MacOS X (expiremental).
 
 ## Installation
 
