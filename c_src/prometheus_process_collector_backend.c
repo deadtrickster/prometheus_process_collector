@@ -5,7 +5,7 @@
 #ifdef __linux__
 static long pagesize(void)
 {
-  return sysconf(_SC_CLK_TCK);
+  return sysconf(_SC_PAGESIZE);
 }
 #endif
 
