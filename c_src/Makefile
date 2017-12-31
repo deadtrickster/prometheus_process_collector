@@ -12,7 +12,7 @@ ERL_INTERFACE_LIB_DIR ?= $(shell erl -noshell -s init stop -eval "io:format(\"~s
 
 C_SRC_DIR = $(CURDIR)
 C_SRC_OUTPUT ?= $(CURDIR)/../priv/$(PROJECT).so
-MEMTEST_OUTPUT ?= $(CURDIR)/../_build/prometheus_process_collector_backend
+MEMTEST_OUTPUT ?= $(CURDIR)/../_build/memory_test
 
 .PHONY: memory-test
 
@@ -20,32 +20,36 @@ MEMTEST_OUTPUT ?= $(CURDIR)/../_build/prometheus_process_collector_backend
 
 UNAME_SYS := $(shell uname -s)
 ifeq ($(UNAME_SYS), Darwin)
-	CC ?= cc
-	CFLAGS ?= -O3 -std=c99 -arch x86_64 -finline-functions -Wall -Wmissing-prototypes
-	CXXFLAGS ?= -O3 -arch x86_64 -finline-functions -Wall
+	CXX ?= c++
+	CXXFLAGS ?= -O3 -arch x86_64 -finline-functions
 	LDFLAGS ?= -arch x86_64 -flat_namespace -undefined suppress
+	PSOURCES = prometheus_process_info_macos.cc
 else ifeq ($(UNAME_SYS), FreeBSD)
-	CC ?= cc
-	CEFLAGS ?= -D__STANDALONE_TEST__ -std=c99 -Wall -Wmissing-prototypes
-	CFLAGS ?= -O3 -std=c99 -finline-functions -Wall -Wmissing-prototypes
-	CXXFLAGS ?= -O3 -finline-functions -Wall
+	CXX ?= c++
+	CXXEFLAGS ?= -D__STANDALONE_TEST__ -std=c++11 -Wall
+	CXXFLAGS ?= -O3 -finline-functions
+	PSOURCES = prometheus_process_info_freebsd.cc
 else ifeq ($(UNAME_SYS), Linux)
-	CC ?= gcc
-	CFLAGS ?= -O3 -std=c99 -finline-functions -Wall -Wmissing-prototypes
-	CEFLAGS ?= -D__STANDALONE_TEST__ -std=c99 -Wall -Wmissing-prototypes
-	CXXFLAGS ?= -O3 -finline-functions -Wall
+	CXX ?= g++
+	CXXEFLAGS ?= -D__STANDALONE_TEST__ -std=c++11 -Wall
+	CXXFLAGS ?= -O3 -finline-functions
+	PSOURCES = prometheus_process_info_linux.cc
 endif
 
-CFLAGS += -fPIC -I $(ERTS_INCLUDE_DIR) -I $(ERL_INTERFACE_INCLUDE_DIR)
-CXXFLAGS += -fPIC -I $(ERTS_INCLUDE_DIR) -I $(ERL_INTERFACE_INCLUDE_DIR)
+SOURCES = prometheus_process_collector_nif.cc $(PSOURCES)
 
+CXXFLAGS += -fPIC -I $(ERTS_INCLUDE_DIR) -I $(ERL_INTERFACE_INCLUDE_DIR) -std=c++11 -Wall
 LDLIBS += -L $(ERL_INTERFACE_LIB_DIR) -lerl_interface -lei
+
+ifeq ($(UNAME_SYS), OpenBSD)
+	LDLIBS += -lestdc++
+else
+	LDLIBS += -lstdc++
+endif
+
 LDFLAGS += -shared
 
 # Verbosity.
-
-c_verbose_0 = @echo " C     " $(?F);
-c_verbose = $(c_verbose_$(V))
 
 cpp_verbose_0 = @echo " CPP   " $(?F);
 cpp_verbose = $(cpp_verbose_$(V))
@@ -53,23 +57,15 @@ cpp_verbose = $(cpp_verbose_$(V))
 link_verbose_0 = @echo " LD    " $(@F);
 link_verbose = $(link_verbose_$(V))
 
-SOURCES := $(shell find $(C_SRC_DIR) -type f \( -name "*.c" -o -name "*.C" -o -name "*.cc" -o -name "*.cpp" \))
 OBJECTS = $(addsuffix .o, $(basename $(SOURCES)))
 
-COMPILE_C = $(c_verbose) $(CC) $(CFLAGS) $(CPPFLAGS) -c
 COMPILE_CPP = $(cpp_verbose) $(CXX) $(CXXFLAGS) $(CPPFLAGS) -c
 
 $(C_SRC_OUTPUT): $(OBJECTS)
 	@mkdir -p $(BASEDIR)/priv/
 	$(link_verbose) $(CC) $(OBJECTS) $(LDFLAGS) $(LDLIBS) -o $(C_SRC_OUTPUT)
 
-%.o: %.c
-	$(COMPILE_C) $(OUTPUT_OPTION) $<
-
 %.o: %.cc
-	$(COMPILE_CPP) $(OUTPUT_OPTION) $<
-
-%.o: %.C
 	$(COMPILE_CPP) $(OUTPUT_OPTION) $<
 
 %.o: %.cpp
@@ -77,7 +73,7 @@ $(C_SRC_OUTPUT): $(OBJECTS)
 
 memory-test:
 	@mkdir -p $(BASEDIR)/_build/
-	$(CC) $(CEFLAGS) $(LDLIBS) prometheus_process_collector_backend.c -o $(MEMTEST_OUTPUT)
+	$(CXX) $(CXXEFLAGS) $(LDLIBS) prometheus_process_info_mt.cc $(PSOURCES) -o $(MEMTEST_OUTPUT)
 	valgrind --leak-check=full --error-exitcode=1 $(MEMTEST_OUTPUT) 2
 
 clean:

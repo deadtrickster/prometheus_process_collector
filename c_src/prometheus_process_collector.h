@@ -1,5 +1,4 @@
-#ifndef PROMETHEUS_PROCESS_COLLECTOR_BACKEND_H
-#define PROMETHEUS_PROCESS_COLLECTOR_BACKEND_H
+#pragma once
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,18 +48,17 @@ struct prometheus_process_info
 
 #ifdef __linux__
 
-struct kinfo_proc {
-  struct        timeval ki_start;       /* starting time */
-  int           ki_numthreads;          /* XXXKSE number of threads in total */
-  unsigned long ki_size;                /* virtual size */
-  unsigned long ki_rssize;              /* resident size in pages */
-  struct        rusage ki_rusage;       /* process rusage statistics */
+struct kinfo_proc
+{
+  struct timeval ki_start; /* starting time */
+  int ki_numthreads;       /* XXXKSE number of threads in total */
+  unsigned long ki_size;   /* virtual size */
+  unsigned long ki_rssize; /* resident size in pages */
+  struct rusage ki_rusage; /* process rusage statistics */
 };
 
 #endif
 
 #define PROCESS_INFO_COUNT 18
 
-int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info* prometheus_process_info);
-
-#endif
+int fill_prometheus_process_info(pid_t pid, struct prometheus_process_info *prometheus_process_info);
