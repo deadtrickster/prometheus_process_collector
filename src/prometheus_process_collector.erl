@@ -132,6 +132,7 @@ init() ->
              Dir ->
                filename:join(Dir, ?LIBNAME)
            end,
+
   erlang:load_nif(SoName, 0).
 
 not_loaded(Line) ->
