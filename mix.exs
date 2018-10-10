@@ -37,7 +37,7 @@ defmodule PrometheusProcessCollector.Mixfile do
       },
       files: [
         "c_src/*.h",
-        "c_src/*.c",
+        "c_src/*.cc",
         "c_src/Makefile",
         "src",
         "README.md",
