@@ -13,14 +13,14 @@ Collector which exports the current state of process metrics including cpu, memo
 
 **Hex package note**: Because OTP strictly validates NIF version c_src was compiled with, I removed precompiled binaries from the Hex package. This means that OTP source code is needed to build this library.
 
-When erlang is running in embedded mode this collector should be picked up automatically. For interactive
-mode (i.e. iex, mix, etc) it must be registered manually:
+Also collector needs to be registered (for example in default registry):
 
 ```erlang
 prometheus_registry:register_collector(prometheus_process_collector)
 ```
 
 ```elixir
+require Prometheus.Registry
 Prometheus.Registry.register_collector(:prometheus_process_collector)
 ```
 
