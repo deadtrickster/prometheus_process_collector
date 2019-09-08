@@ -49,7 +49,8 @@ defmodule PrometheusProcessCollector.Mixfile do
 
   defp deps do
     [
-      {:prometheus, "~> 4.0"}
+      {:prometheus, "~> 4.0"},
+      {:elixir_make, "~> 0.4", runtime: false}
     ]
   end
 end
