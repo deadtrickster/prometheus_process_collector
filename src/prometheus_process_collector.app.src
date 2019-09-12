@@ -11,7 +11,6 @@
   {env,[]},
   {modules, []},
 
-  {maintainers, ["Ilya Khaprov"]},
   {licenses, ["MIT"]},
   {links, [{"Github", "https://github.com/deadtrickster/prometheus_process_collector.erl"},
            {"Hex.pm", "https://hex.pm/packages/prometheus_process_collector"},
