@@ -39,7 +39,7 @@ endif
 SOURCES = prometheus_process_collector_nif.cc $(PSOURCES)
 
 CXXFLAGS += -fPIC -I $(ERTS_INCLUDE_DIR) -I $(ERL_INTERFACE_INCLUDE_DIR) -std=c++11 -Wall
-LDLIBS += -L $(ERL_INTERFACE_LIB_DIR) -lerl_interface -lei
+LDLIBS += -L $(ERL_INTERFACE_LIB_DIR) -lei
 
 ifeq ($(UNAME_SYS), OpenBSD)
 	LDLIBS += -lestdc++
