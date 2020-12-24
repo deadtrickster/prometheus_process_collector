@@ -21,8 +21,8 @@ MEMTEST_OUTPUT ?= $(CURDIR)/../_build/memory_test
 UNAME_SYS := $(shell uname -s)
 ifeq ($(UNAME_SYS), Darwin)
 	CXX ?= c++
-	CXXFLAGS += -O3 -arch x86_64 -finline-functions
-	LDFLAGS += -arch x86_64 -flat_namespace -undefined suppress
+	CXXFLAGS += -O3 -finline-functions
+	LDFLAGS += -flat_namespace -undefined suppress
 	PSOURCES = prometheus_process_info_macos.cc
 else ifeq ($(UNAME_SYS), FreeBSD)
 	CXX ?= c++
